@@ -1,0 +1,12 @@
+# 버전 추적 제외
+client_body_temp/
+fast_cgi_temp/
+*.html
+images/
+logs/
+nginx-1.18.0/
+proxy_temp/
+sbin/
+scgi_temp/
+tmp/
+uswgi_temp/
