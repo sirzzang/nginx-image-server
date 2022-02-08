@@ -1,6 +1,6 @@
 # 버전 추적 제외
 client_body_temp/
-fast_cgi_temp/
+fastcgi_temp/
 *.html
 images/
 logs/
@@ -9,4 +9,4 @@ proxy_temp/
 sbin/
 scgi_temp/
 tmp/
-uswgi_temp/
+uwsgi_temp/
