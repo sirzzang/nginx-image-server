@@ -8,16 +8,18 @@ cgitb.enable(format="text")
 
 form = cgi.FieldStorage(keep_blank_values=False)
 
+# TODO: image key 없을 때 에러 처리
 files = [form.getvalue(key) for key in form.keys()]
 cnt = len(files)
 
-# 파일명 해시값 / 분리
-# TODO: 응답 해시값 암호화, 이미지 url 분리, utils 분리
+# 이미지 id 추출: hashed_path + ext
 for i, (file_name, content_type, path) in enumerate(files):
     IMAGE_URL = '/images/'
     hashed_path = path.split(IMAGE_URL)[-1]
     image_id = hashed_path.replace('/', '')
     files[i][2] = image_id
+
+# TODO: 응답 해시값 암호화, 이미지 url 분리, utils 분리
 
 
 # TODO: 확장자 검증, 미디어 타입 검증, validator 혹은 utils 분리
