@@ -14,19 +14,14 @@ content_type = form.getvalue("content_type")
 path = form.getvalue("path")
 
 # 이미지 id 추출: hashed_path + ext
-ext = content_type.split('/')[-1]
-IMAGE_URL = '/images/'
-hashed_path = path.split(IMAGE_URL)[-1]
+IMAGE_ROOT = 'images'
+hashed_path = path.split(IMAGE_ROOT)[-1]
 image_id = hashed_path.replace('/', '')
 
-# TODO: 응답 해시값 암호화, 이미지 url 분리, utils 분리
-
-# TODO: 확장자 검증, 미디어 타입 검증, validator 혹은 utils 분리
-
-# TODO: 응답 객체 생성 및 응답 상태 코드, 메시지 등 정의/ 상태코드 생성 등 utils 분리
+# TODO: 응답 객체 생성 및 응답 상태 코드, 메시지 정의 등 utils 분리
 resp = {}
 resp['code'] = 200
-resp['message'] = 'image upload successfully done'
+resp['message'] = 'image successfully uploaded'
 resp['data'] = {}
 resp['data']['file_name'] = file_name
 resp['data']['image_id'] = image_id
