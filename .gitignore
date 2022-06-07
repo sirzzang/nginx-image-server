@@ -10,3 +10,4 @@ sbin/
 scgi_temp/
 tmp/
 uwsgi_temp/
+__pycache__/
