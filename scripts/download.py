@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+'''
+This script is deprecated. Not used.
+'''
 import cgi
 import cgitb
 import imghdr
