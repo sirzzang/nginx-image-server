@@ -1,37 +1,48 @@
-#!/usr/bin/python3
-import cgi
+#!/usr/bin/env python
+import cgitb
 import os
-import json
+import sys
+import glob
+from urllib.parse import parse_qsl
+from response import Response
+from utils import delete_from_storage
+from errors import NoSuchFileError, DuplicateFileError
 
-form = cgi.FieldStorage(keep_blank_values=False)
+# cgi 스크립트 디버깅
+cgitb.enable(format="text")
 
-# TODO: 응답 객체 생성 및 응답 상태 코드 utils 분리
-resp = {}
-resp.setdefault('code', 200)
-resp.setdefault('message', '')
+# cgi 스크립트 환경변수
+QUERY_STRING = os.getenv("QUERY_STRING")
 
-# request uri에서 image id 추출
-# TODO: image_id 없거나, image_id 형식 잘못되었을 때 400에러
-dir1 = form.getvalue('dir1')
-dir2 = form.getvalue('dir2')
-dir3 = form.getvalue('dir3')
-filename = form.getvalue('filename')
+# 파일 경로 추출
+query_dict = dict(parse_qsl(QUERY_STRING))
+root_dir = query_dict['type']
+file_id = query_dict['id']
+dir1 = file_id[0:2]
+dir2 = file_id[2:4]
+dir3 = file_id[4:6]
+dir4 = file_id[6:8]
+dir5 = file_id[8:10]
+dir6 = file_id[10:12]
+file_name = file_id[12:]
+file_path = os.path.join("/", root_dir, dir1, dir2, dir3, dir4, dir5, dir6, file_name)
 
-# TODO: path 변경
-NGINX_ROOT = '/home/eraser/nginx'
-IMAGE_ROOT = 'images'
-img_path = os.path.join(NGINX_ROOT, IMAGE_ROOT, dir1, dir2, dir3, filename)
-
-# 파일이 존재하면 삭제
-is_img_exists = os.path.exists(img_path)
-if is_img_exists:
-    os.remove(img_path)
-    resp['code'] = 200
-    resp['message'] = f'image {dir1}{dir2}{dir3}{filename} successfully deleted'
+# 파일 삭제
+matched_files = glob.glob(f"{file_path}.*")
+try:
+    temp = delete_from_storage(file_id, matched_files)
+except NoSuchFileError as ex:
+    '''삭제하고자 하는 파일이 없을 때'''
+    resp = Response(400, str(ex))
+    resp.send()
+    sys.exit(0)
+except DuplicateFileError as ex:
+    '''삭제하고자 하는 파일이 2개 이상일 때'''
+    resp = Response(500, str(ex))
+    resp.send()
+    sys.exit(0)
 else:
-    resp['code'] = 400
-    resp['message'] = f'No image with image_id {dir1}{dir2}{dir3}{filename}'
-
-print("Content-Type: application/json")
-print()
-print(json.dumps(resp))
+    '''성공적으로 삭제했을 때'''
+    resp = Response(200, f'File {file_id} successfully deleted.')
+    resp.send()
+    sys.exit(0)

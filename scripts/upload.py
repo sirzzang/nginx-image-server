@@ -1,50 +1,72 @@
-#!/usr/bin/python3
-import json
-import cgitb
+#!/usr/bin/env python
 import cgi
-import sys
+import cgitb
 import os
+import sys
+from response import Response
+from utils import move_upload_to_storage, rollback_upload
+from validate import is_single_file_uploaded, is_valid_file_type
+from errors import NoFileUploadedError, MultipleFileUploadedError, NotAllowedExtensionError
 
-# cgi 스크립트 에러 핸들링
+# cgi 스크립트 디버깅
 cgitb.enable(format="text")
 
+# cgi 스크립트 form 및 환경변수
 form = cgi.FieldStorage(keep_blank_values=False)
+UPLOAD_DUMMY_CODE = os.getenv('UPLOAD_DUMMY_CODE')
+ALLOWED_IMG = os.getenv('ALLOWED_IMG')
+REQUEST_URI = os.getenv('REQUEST_URI')
+UPLOAD_ROOT = os.getenv('UPLOAD_ROOT')
 
-# TODO: 응답 객체 생성 및 응답 상태 코드 utils 분리
-resp = {}
-resp.setdefault('code', 200)
-resp.setdefault('message', '')
+# upload 처리를 위한 변수
+allowed_images = ALLOWED_IMG.split(',')
+root_dir = REQUEST_URI.split(UPLOAD_ROOT)[0]
 
 # 업로드한 파일
-file_name = form.getvalue("file_name")
-content_type = form.getvalue("content_type")
-path = form.getvalue("path")
+files = [form.getvalue(key) for key in form.keys() if key != UPLOAD_DUMMY_CODE]
 
-# 업로드 파일의 content type이 이미지가 아닐 때 예외 처리
-if not content_type.startswith('image'):
-    os.remove(path)
-    resp['code'] = 400
-    resp['message'] = f'content type {content_type} of fie {file_name} not allowed.'
-    print("Content-Type: application/json")
-    print()
-    print(json.dumps(resp))
+# 파일 개수 검증
+try:
+    is_single_file_uploaded(files)
+except NoFileUploadedError as ex:
+    '''
+    업로드된 파일이 없는 경우
+        1. Body가 비어 있는 경우, Content-Type 헤더가 없어 Nginx 단에서 400 Bad Request 처리
+        2. Body가 있으나 File type이 아닌 경우, 아래 부분에서 400 에러 처리
+    '''
+    resp = Response(400, str(ex))
+    resp.send()
     sys.exit(0)
+except MultipleFileUploadedError as ex:
+    '''여러 개의 파일이 업로드된 경우'''
+    resp = Response(400, str(ex))
+    resp.send()
+    sys.exit(0)
+else:
+    file_names = [name for name, _, _ in files if files]
+    file_paths = [path for _, _, path in files if files]
 
-
-# 이미지 id 추출: hashed_path + ext
-IMAGE_ROOT = 'images'
-hashed_path = path.split(IMAGE_ROOT)[-1]
-image_id = hashed_path.replace('/', '')
-
-# TODO: 응답 객체 생성 및 응답 상태 코드, 메시지 정의 등 utils 분리
-resp = {}
-resp['message'] = 'image successfully uploaded'
-resp['data'] = {}
-resp['data']['file_name'] = file_name
-resp['data']['image_id'] = image_id
-resp_json = json.dumps(resp)
+# 확장자 검증
+try:
+    is_valid_file_type(file_names, allowed_images)
+except NotAllowedExtensionError as ex:
+    rollback_upload(file_paths)
+    resp = Response(400, str(ex))
+    resp.send()
+    sys.exit(0)
+    
+# uuid 발급 후 업로드 처리
+data = {}
+try:
+    file_name, file_id = move_upload_to_storage(files[0], root_dir)
+except:
+    pass
+else:
+    data['file_name'] = file_name
+    data['file_id'] = file_id
 
 # 업로드 성공 시 응답 반환
-print("Content-Type: application/json")
-print()
-print(json.dumps(resp))
+resp = Response(200, 'File(s) successfully uploaded.')
+resp.build("data", data)
+resp.send()
+sys.exit(0)
