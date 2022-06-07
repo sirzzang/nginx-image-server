@@ -1,61 +1,43 @@
 #!/usr/bin/python3
 import cgi
 import cgitb
-import os
-import sys
 import json
 
+# cgi 스크립트 에러 핸들링
 cgitb.enable(format="text")
 
 form = cgi.FieldStorage(keep_blank_values=False)
 
-# # TODO: 응답 객체 생성 및 응답 상태 코드 utils 분리
-# resp = {}
-# resp.setdefault('code', 200)
-# resp.setdefault('message', '')
+# TODO: image key 없을 때 에러 처리
+files = [form.getvalue(key) for key in form.keys()]
+cnt = len(files)
 
-# # TODO: image key 없을 때 에러 처리
-# files = [form.getvalue(key) for key in form.keys()]
-# cnt = len(files)
+# 이미지 id 추출: hashed_path + ext
+for i, (file_name, content_type, path) in enumerate(files):
+    IMAGE_ROOT = 'images'
+    hashed_path = path.split(IMAGE_ROOT)[-1]
+    image_id = hashed_path.replace('/', '')
+    files[i][2] = image_id
 
-# # 이미지 경로 저장 배열
-# path_cache = [path for _, _, path in files]
+# TODO: 응답 해시값 암호화, 이미지 url 분리, utils 분리
 
-# # 이미지 경로 추출
-# IMAGE_ROOT = 'images'
-# for i, (file_name, content_type, path) in enumerate(files):
+# TODO: 확장자 검증, 미디어 타입 검증, validator 혹은 utils 분리
 
-#     # 업로드된 파일 중 content type이 이미지가 아닌 것이 있을 때
-#     if not content_type.startswith('image'):
-#         for p in path_cache:
-#             os.remove(p)
-#         resp['code'] = 400
-#         resp['message'] = f'content type {content_type} of file {file_name} not allowed.'
-#         print("Content-Type: application/json")
-#         print()
-#         print(json.dumps(resp))
-#         sys.exit(0)
+# TODO: 응답 객체 생성 및 응답 상태 코드, 메시지 등 정의/ 상태코드 생성 등 utils 분리
+resp = {}
+resp['code'] = 200
+resp['message'] = f'{cnt} images successfully uploaded'
+resp['data'] = {}
+resp['data']['cnt'] = cnt
+resp['data']['image_ids'] = [
+    {
+        'file_name': file[0],
+        'image_id': file[2]
+    } for file in files
+]
+resp_json = json.dumps(resp)
 
-#     hashed_path = path.split(IMAGE_ROOT)[-1]
-#     image_id = hashed_path.replace('/', '')
-#     files[i].append(image_id)
-
-# # TODO: 응답 객체 생성 및 응답 상태 코드, 메시지 등 정의/ 상태코드 생성 등 utils 분리
-# resp['message'] = f'{cnt} images successfully uploaded'
-# resp['data'] = [
-#     {
-#         'file_name': file[0],
-#         'image_id': file[-1]
-#     } for file in files
-# ]
-
-# # 업로드 성공 시 응답 반환
-# print("Content-Type: application/json")
-# print()
-# print(json.dumps(resp))
-
-
-print("Content-Type: text/html")
+# TODO: cgi 스크립트 오류 시 처리(cleanup, 에러 코드 세분화)
+print("Content-Type: application/json")
 print()
-print(form)
-print(form.keys(), len(form))
+print(json.dumps(resp))
