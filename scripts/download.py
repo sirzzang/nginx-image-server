@@ -16,12 +16,13 @@ resp.setdefault('code', 200)
 resp.setdefault('message', '')
 
 # request uri에서 image_id 추출
+# TODO: image_id 없거나, image_id 형식 잘못되었을 때 400에러
 dir1 = form.getvalue('dir1')
 dir2 = form.getvalue('dir2')
 dir3 = form.getvalue('dir3')
 filename = form.getvalue('filename')
 
-# image_id path 변경
+# TODO: image_id path 변경
 NGINX_ROOT = '/home/eraser/nginx'
 IMAGE_ROOT = 'images'
 img_path = os.path.join(NGINX_ROOT, IMAGE_ROOT, dir1, dir2, dir3, filename)

@@ -23,12 +23,14 @@ IMAGE_ROOT = 'images'
 img_path = os.path.join(NGINX_ROOT, IMAGE_ROOT, dir1, dir2, dir3, filename)
 
 # 파일이 존재하면 삭제
-if os.path.isfile(img_path):
+is_img_exists = os.path.exists(img_path)
+if is_img_exists:
     os.remove(img_path)
+    resp['code'] = 200
     resp['message'] = f'image {dir1}{dir2}{dir3}{filename} successfully deleted'
 else:
     resp['code'] = 400
-    resp['message'] = f'No such image with image_id {dir1}{dir2}{dir3}{filename}'
+    resp['message'] = f'No image with image_id {dir1}{dir2}{dir3}{filename}'
 
 print("Content-Type: application/json")
 print()
