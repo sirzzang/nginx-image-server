@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  image-server:
+    build:
+      context: .
+      args:
+        - NGINX_VERSION=${NGINX_VERSION}
+        - UPLOAD_MODULE_VERSION=${NGINX_UPLOAD_MODULE_VERSION}
+    ports:
+      - "${MEDIA_PORT}:8888"
+    volumes:
+      - ./scripts:/usr/local/nginx/scripts
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/http.conf:/etc/nginx/conf.d/http.conf
+      - ./config/upload.conf:/etc/nginx/conf.d/upload.conf
+      - ./config/fastcgi.conf:/etc/nginx/conf.d/fastcgi.conf
+      - type: volume
+        source: image-server-volume
+        target: /${UPLOAD_ROOT}
+          
+    environment:
+      MEDIA_PORT: ${MEDIA_PORT}
+      UPLOAD_ROOT: ${UPLOAD_ROOT}
+      UPLOAD_IMAGES: ${UPLOAD_IMAGES}
+      ALLOWED_IMG: ${ALLOWED_IMG}
+      TZ: Asia/Seoul
+
+volumes:
+  image-server-volume:
